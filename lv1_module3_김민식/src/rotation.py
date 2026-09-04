@@ -66,11 +66,10 @@ def rodrigues(axis, theta: float) -> np.ndarray:
     - 문제 1 의 `skew` 를 반드시 사용한다.
     """
     # TODO: 문제 2-5
-    I = np.array([[1,0,0],
-                  [0,1,0],
-                  [0,0,1]])
-    kx = skew(axis)
-    R = I + np.sin(theta)*kx + ((1-np.cos(theta))*(kx@kx))
+    I = np.eye(3)
+    K = skew(normalize(axis))
+    R = I + np.sin(theta)*K + ((1-np.cos(theta))*(K@K))
+    return R
 
 
 # ------------------------------------------------------------- 재직교화 관련
