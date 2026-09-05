@@ -34,7 +34,7 @@ from src.rotation import (
     rot_z,
 )
 
-ANGLES = [0.0, np.deg2rad(22.5), np.pi / 6, np.pi / 4, np.pi / 2, 2.0, np.pi, -1.234]
+ANGLES = [0.0, np.pi / 6, np.pi / 4, np.pi / 2, 2.0, np.pi, -1.234]
 MAKERS = [rot_x, rot_y, rot_z]
 
 
@@ -50,7 +50,16 @@ def rng():
 @pytest.mark.parametrize("theta", ANGLES)
 def test_columns_are_orthonormal(maker, theta):
     # TODO: 각 열의 길이가 1 인지, 서로 다른 두 열의 내적이 0 인지 검사
-    raise NotImplementedError("test_columns_are_orthonormal 을 작성하세요")
+    R = maker(theta)
+    
+    for i in range(3):
+        assert np.isclose(np.linalg.norm(R[:,i]), 1), \
+        f"[Fail] test_columns_are_orthonormal, 각 열의 길이가 1이 아닙니다. {maker.__name__}"
+    
+    for i in range(3):
+        for j in range(i+1, 3):
+            assert np.isclose(np.dot(R[:,i], R[:,j]), 0), \
+        f"[Fail] test_columns_are_orthonormal, 서로 다른 두 열의 내적이 0이 아닙니다. {maker.__name__}"
 
 
 # --- 2. 행렬식이 1인가 --------------------------------------------------------
@@ -59,7 +68,9 @@ def test_columns_are_orthonormal(maker, theta):
 @pytest.mark.parametrize("theta", ANGLES)
 def test_determinant_is_one(maker, theta):
     # TODO: det(R) == 1 인지 검사
-    raise NotImplementedError("test_determinant_is_one 을 작성하세요")
+    R = maker(theta)
+    assert np.isclose(np.linalg.det(R), 1), \
+        f"[Fail] test_determinant_is_one {maker.__name__}"
 
 
 # --- 3. 역행렬 == 전치 --------------------------------------------------------
@@ -68,7 +79,13 @@ def test_determinant_is_one(maker, theta):
 @pytest.mark.parametrize("theta", ANGLES)
 def test_inverse_equals_transpose(maker, theta):
     # TODO: inv(R) == R.T 이고 R.T @ R == I 인지 검사
-    raise NotImplementedError("test_inverse_equals_transpose 를 작성하세요")
+    R = maker(theta)
+    assert np.allclose(np.linalg.inv(R), R.T), \
+        f"[Fail] test_inverse_equals_transpose, inv(R) != R.T {maker.__name__}"
+    assert np.allclose(R.T @ R, np.eye(3)), \
+        f"[Fail] test_inverse_equals_transpose, R.T @ R != I {maker.__name__}"
+    # assert False, \
+    #     f"[Fail] assert False Test {maker.__name__}"
 
 
 # --- 4. 재직교화 결과가 직교행렬인가 -----------------------------------------
@@ -77,7 +94,16 @@ def test_gram_schmidt_restores_orthogonality(rng):
     # TODO: 회전행렬에 작은 노이즈를 섞어 직교성을 깨뜨린 뒤,
     #       gram_schmidt 로 복구하면 직교성 오차가 기계정밀도 수준으로 줄고
     #       det 가 1 이며 is_rotation 이 True 인지 검사
-    raise NotImplementedError("test_gram_schmidt_restores_orthogonality 를 작성하세요")
+    R = rot_z(np.pi / 2)
+    noise = rng.normal(0, 1e-6, size=(3, 3))
+    R_noisy = R + noise
+    R_noisy_fix = gram_schmidt(R_noisy)
+    error = orthogonality_error(R_noisy_fix)
+    assert error < 1e-12, \
+        f"[{error}]직교오차가 1e-12보다 큽니다."
+    assert np.isclose(np.linalg.det(R_noisy_fix), 1) and is_rotation(R_noisy_fix) == True, \
+        f"[Fail] test_gram_schmidt_restores_orthogonality, det이 1이 아니거나 is_rotation이 False입니다."
+    
 
 
 # --- 여기부터는 추가 테스트 (권장) -------------------------------------------

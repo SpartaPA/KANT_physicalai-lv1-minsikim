@@ -351,48 +351,84 @@ def inverse_gauss_jordan(A) -> np.ndarray:
     (`np.linalg.inv` 를 부르지 말고 소거로 직접 구한다)
     """
     # TODO: 문제 4-3
-    I = np.eye(3)
-    U = np.array(np.hstack(A, I), dtype=float, copy=True)
-    # m = m.astype(float).copy()
-    rows, cols = U.shape
-    pivot_row = 0
-    n_swaps = 0
-    x = np.zeros(rows)
-    steps = []
     
-    for col in range(cols):
-        column = U[pivot_row:, col]
-        # 해당 열이 모두 0이면 여기선 피봇을 찾을수없음, 다음 열로 이동
-        if np.all(np.isclose(column, 0)):
-            continue
-        
-        # pivoting
-        pivot = pivot_row + np.argmax(np.abs(column))
-        
-        # 0이 아닌 값을 찾으면 피봇으로 지정해서 위로 올림
-        # 피봇_row와 피봇 두 행을 바꿈, [[]]와 [][]는 다름
-        U[[pivot_row, pivot]] = U[[pivot, pivot_row]]
-        n_swaps += 1
-        
-        for r in range(pivot_row + 1, rows):
-            factor = U[r, col] / U[pivot_row, col]
-            U[r] = U[r] - factor * U[pivot_row]
-            print(f"소거: R{r} <- R{r} - {factor}R{pivot_row}")
-            print(U)
-        
-        pivot_row += 1
-        
-        if pivot_row == rows:
-            break
+    rows, cols = A.shape
+
+    if rows != cols:
+        raise ValueError("정사각행렬이 아닙니다.")
+
+    n = rows
+
+    I = np.eye(n)
+    U = np.hstack((A, I))
+
+    for col in range(n):
+
+        # pivot 선택
+        pivot = col + np.argmax(np.abs(U[col:, col]))
+
+        # 특이행렬 검사
+        if np.isclose(U[pivot, col], 0):
+            raise np.linalg.LinAlgError("특이행렬입니다.")
+
+        # 행 교환
+        if pivot != col:
+            U[[col, pivot]] = U[[pivot, col]]
+
+        # pivot을 1로 만들기
+        U[col] = U[col] / U[col, col]
+
+        # pivot 위/아래를 전부 0으로 만들기
+        for r in range(n):
+            if r == col:
+                continue
+
+            factor = U[r, col]
+            U[r] = U[r] - factor * U[col]
+
+    # [I | A^-1]에서 오른쪽 부분만 반환
+    return U[:, n:]
+
+
+    # I = np.eye(A.shape[0])
+    # U = np.array(np.hstack([A, I]), dtype=float, copy=True)
+    # rows, cols = U.shape
+    # x = np.zeros(rows)
+    # pivot_row = 0
+    # n_swaps = 0
+    # steps = []
     
-    for i in range(rows-1, -1, -1): # rows-1부터 0까지 i--
-        x[i] = U[i, -1] # 1. 끝에서부터 b값 넣음, 예: [0 0 2 | 4] => x[-1] = 4
-        for j in range(i+1, rows): # 처음엔 rows-1+1 == rows이므로 실행안됨
-            x[i] -= U[i,j] * x[j] # b값에 x와 계수를 곱해 빼줌, 예: [0 3 1 | 5] -> 5-(3*0)-(1*2) = 3
+    # for col in range(cols):
+    #     column = U[pivot_row:, col]
+    #     # 해당 열이 모두 0이면 여기선 피봇을 찾을수없음, 다음 열로 이동
+    #     if np.all(np.isclose(column, 0)):
+    #         continue
         
-        x[i] /= U[i, i] # 계수로 나눠줌, 예: [0 0 2 | 4], x[-1] = 4 / 2 = 2
+    #     # pivoting
+    #     pivot = pivot_row + np.argmax(np.abs(column))
+        
+    #     # 0이 아닌 값을 찾으면 피봇으로 지정해서 위로 올림
+    #     # 피봇_row와 피봇 두 행을 바꿈, [[]]와 [][]는 다름
+    #     U[[pivot_row, pivot]] = U[[pivot, pivot_row]]
+    #     n_swaps += 1
+        
+    #     for r in range(pivot_row + 1, rows):
+    #         factor = U[r, col] / U[pivot_row, col]
+    #         U[r] = U[r] - factor * U[pivot_row]
+    #         print(f"소거: R{r} <- R{r} - {factor}R{pivot_row}")
+    #         print(U)
+        
+    #     pivot_row += 1
+        
+    #     if pivot_row == rows:
+    #         break
     
-    A_inv = U[:, rows:]
+    # for i in range(rows-1, -1, -1): # rows-1부터 0까지 i--
+    #     x[i] = U[i, -1] # 1. 끝에서부터 b값 넣음, 예: [0 0 2 | 4] => x[-1] = 4
+    #     for j in range(i+1, rows): # 처음엔 rows-1+1 == rows이므로 실행안됨
+    #         x[i] -= U[i,j] * x[j] # b값에 x와 계수를 곱해 빼줌, 예: [0 3 1 | 5] -> 5-(3*0)-(1*2) = 3
+        
+    #     x[i] /= U[i, i] # 계수로 나눠줌, 예: [0 0 2 | 4], x[-1] = 4 / 2 = 2
     
-    return A_inv
+    # return U[:, rows:]
     

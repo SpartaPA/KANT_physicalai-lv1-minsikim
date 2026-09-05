@@ -82,18 +82,17 @@ def inv_T_batch(Ts) -> np.ndarray:
           `np.einsum("nij,nj->ni", ...)` 로 쓸 수 있다.
     """
     # TODO: 문제 5-4
-    trow, tcol = Ts[0].shape
-    if (trow != 4 or tcol != 4):
-        raise ValueError(f"T가 4x4가 아닙니다. {Ts.shape}")
-    Rs = Ts[:, :3, :3] # 왼쪽 위 3x3 가져오기
-    ts = Ts[:, :3, 3] # 4번째열 위쪽 3개 가져오기
-    Rs_T = np.swapaxes(Rs, 1, 2) # 그냥 .T를 쓰면 3차원이 뒤집힘
-    ts_inv = -np.einsum("nij,nj->ni", Rs_T, ts) # ts_inv = Rs_T @ -ts
-    ts_inv = np.tile(np.eye(4), (Ts.shape[0],0,0))
-    ts_inv[:, :3, :3] = Rs_T
-    ts_inv[:, :3, 3] = ts_inv
-    
-    return ts_inv
+    Rs = Ts[:, :3, :3]
+    ts = Ts[:, :3, 3]
+
+    Rs_T = np.swapaxes(Rs, 1, 2)
+    ts_inv = -np.einsum("nij,nj->ni", Rs_T, ts)
+
+    Ts_inv = np.tile(np.eye(4), (Ts.shape[0], 1, 1))
+    Ts_inv[:, :3, :3] = Rs_T
+    Ts_inv[:, :3, 3] = ts_inv
+
+    return Ts_inv
 
 
 def to_homogeneous(P, w: float = 1.0) -> np.ndarray:
@@ -102,20 +101,25 @@ def to_homogeneous(P, w: float = 1.0) -> np.ndarray:
     w = 1 이면 점(위치), w = 0 이면 방향(벡터).
     """
     # TODO: 문제 5-2
-    return np.append(w)
+    return np.append(P, w)
 
 
 def transform_point(T, p) -> np.ndarray:
     """점 변환 (w = 1): 회전과 병진이 모두 적용된다. 반환은 (3,)."""
     # TODO: 문제 5-2
-    
+    p_h = np.append(p, 1.0)
+    result_h = T @ p_h
+
+    return result_h[:3] # 점 리턴
 
 
 def transform_direction(T, v) -> np.ndarray:
     """방향 변환 (w = 0): 회전만 적용되고 병진은 무시된다. 반환은 (3,)."""
     # TODO: 문제 5-2
-    raise NotImplementedError("transform_direction 을 구현하세요")
+    v_h = np.append(v, 0.0)
+    result_h = T @ v_h
 
+    return result_h[:3]
 
 def transform_points(T, P, w: float = 1.0) -> np.ndarray:
     """(N,3) 점군을 **반복문 없이** 한 번에 변환한다. (3,) 입력도 받아야 한다.
@@ -124,7 +128,10 @@ def transform_points(T, P, w: float = 1.0) -> np.ndarray:
           메모리 접근도 행 방향이라 캐시에 유리하다.
     """
     # TODO: 문제 5-2 / 6-2
-    raise NotImplementedError("transform_points 를 구현하세요")
+    # 동차좌표 추가 → (N,4)
+    P_h = np.hstack((P, np.full((P.shape[0], 1), w)))
+
+    return (T @ P_h.T).T[:,:3]
 
 
 def least_squares_normal_equation(A, b):
@@ -140,10 +147,11 @@ def least_squares_normal_equation(A, b):
     residual : b - A x
     """
     # TODO: 문제 5-5
-    raise NotImplementedError("least_squares_normal_equation 을 구현하세요")
-
+    x = inverse_gauss_jordan(A.T @ A) @ A.T @ b
+    residual = b - A @ x
+    return x, residual
 
 def rmse(residual) -> float:
     """잔차의 RMSE = sqrt(mean(r^2))."""
     # TODO: 문제 5-5
-    raise NotImplementedError("rmse 를 구현하세요")
+    return float(np.sqrt(np.mean(residual ** 2)))
