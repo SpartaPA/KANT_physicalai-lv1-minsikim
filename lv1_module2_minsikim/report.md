@@ -48,3 +48,27 @@ Consolidate compiler generated dependencies of target motor_app
 [ 66%] Linking CXX executable motor_app
 [100%] Built target motor_app
 ```
+
+# 문제3. rclpy 노드 작성 — 거북이 상태 발행자와 구독자
+## 답안 템플릿
+- /turtle1/pose 필드 구성:
+```
+x: 5.544444561004639
+y: 5.544444561004639
+theta: 0.0
+linear_velocity: 0.0
+angular_velocity: 0.0
+```
+- ros2 topic hz /turtle_distance 출력: 평균 10.000 Hz
+```
+average rate: 9.998
+min: 0.100s max: 0.100s std dev: 0.00016s window: 12
+```
+- 구독자 경고 로그 (터미널 출력)
+```
+[WARN] [1788706472.126889766] [distance_subscriber]: Distance warning: 7.841 m
+```
+- 구독자 2개 동시 수신 확인 (양쪽 로그)
+- 정사각형 주행 캡처 (turtlesim 화면)
+![alt text](image.png)
+- Ctrl+C 정상 종료 화면 (출력)
