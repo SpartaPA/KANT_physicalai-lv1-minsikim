@@ -27,6 +27,8 @@ setup(
             'distance_publisher = turtle_py.distance_publisher:main',
             'distance_subscriber = turtle_py.distance_subscriber:main',
             'square = turtle_py.square:main',
+            'service_client = turtle_py.service_client:main',
+            'rotate_client = turtle_py.rotate_client:main',
         ],
     },
 )

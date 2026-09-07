@@ -5,6 +5,9 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Twist
 
+from std_srvs.srv import SetBool, Trigger
+from turtlesim.msg import Pose
+
 class SquareNode(Node):
     def __init__(self):
         super().__init__('square_node')
@@ -23,12 +26,43 @@ class SquareNode(Node):
             self.control
         )
         
+        self.is_running = True
+        self.home_x = 0.0
+        self.home_y = 0.0
+
+        self.drive_service = self.create_service(
+            SetBool,
+            '/turtle1/set_driving',
+            self.set_driving_callback
+        )
+
+        self.home_service = self.create_service(
+            Trigger,
+            '/turtle1/save_home',
+            self.save_home_callback
+        )
+        
+        self.current_x = 0.0
+        self.current_y = 0.0
+
+        self.pose_subscription = self.create_subscription(
+            Pose,
+            '/turtle1/pose',
+            self.pose_callback,
+            10
+        )
+                
     def control(self):
+        msg = Twist()
+
+        if not self.is_running:
+            self.publisher.publish(msg)
+            return
+        
         elapsed = (
             self.get_clock().now() - self.start_time
         ).nanoseconds / 1e9
         
-        msg = Twist()
 
         if self.state % 2 == 0:
             # 전진
@@ -51,10 +85,48 @@ class SquareNode(Node):
             msg.angular.z = 0.0
 
             self.publisher.publish(msg)
-            self.timer.cancel()
             return
 
         self.publisher.publish(msg)
+    
+    def set_driving_callback(self, request, response):
+        if request.data:
+            # 정지 상태에서 다시 시작
+            if not self.is_running:
+                paused_time = (
+                    self.get_clock().now() - self.pause_start_time
+                )
+                self.start_time += paused_time
+
+            self.is_running = True
+            response.success = True
+            response.message = 'Driving enabled'
+
+        else:
+            # 주행 중 → 정지
+            if self.is_running:
+                self.pause_start_time = self.get_clock().now()
+
+            self.is_running = False
+            response.success = True
+            response.message = 'Driving disabled'
+
+        return response
+    
+    def pose_callback(self, msg):
+        self.current_x = msg.x
+        self.current_y = msg.y
+    
+    def save_home_callback(self, request, response):
+        self.home_x = self.current_x
+        self.home_y = self.current_y
+
+        response.success = True
+        response.message = (
+            f'Home saved: ({self.home_x:.2f}, {self.home_y:.2f})'
+        )
+
+        return response
         
 def main(args=None):
     rclpy.init(args=args)
