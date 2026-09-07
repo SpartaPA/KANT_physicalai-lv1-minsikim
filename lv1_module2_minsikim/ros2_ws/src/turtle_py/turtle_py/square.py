@@ -19,7 +19,7 @@ class SquareNode(Node):
         self.start_time = self.get_clock().now()
         
         self.timer = self.create_timer(
-            0.1,
+            0.01,
             self.control
         )
         
@@ -67,7 +67,8 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

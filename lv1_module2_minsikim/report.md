@@ -68,7 +68,16 @@ min: 0.100s max: 0.100s std dev: 0.00016s window: 12
 ```
 [WARN] [1788706472.126889766] [distance_subscriber]: Distance warning: 7.841 m
 ```
-- 구독자 2개 동시 수신 확인 (양쪽 로그)
-- 정사각형 주행 캡처 (turtlesim 화면)
+1. 구독자 2개 동시 수신 확인 (양쪽 로그)
+![alt text](image-1.png)
+2. 정사각형 주행 캡처 (turtlesim 화면)
 ![alt text](image.png)
-- Ctrl+C 정상 종료 화면 (출력)
+3. Ctrl+C 정상 종료 화면 (출력)
+![alt text](image-2.png)
+
+# 4. rclcpp 노드 작성 — C++ 발행자와 구독자
+## 답안 템플릿
+1. colcon build 성공 출력
+
+2. rclpy 발행에서 rclcpp 구독으로 이어진 로그
+3. rclpy와 rclcpp 대응 관계표 — 노드 생성 / 타이머 / 콜백 / 종료 (4행)
