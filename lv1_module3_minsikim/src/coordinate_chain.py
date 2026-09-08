@@ -62,8 +62,21 @@ class CoordinateChain:
         root 에 연결되어 있지 않으면 KeyError.
         """
         # TODO: 문제 6-1
-        raise NotImplementedError("_path_to_root 를 구현하세요")
+        path = []
+        current = frame
 
+        while current != self.root:
+            path.append(current)
+
+            if current not in self._parent:
+                raise KeyError(current)
+
+            current = self._parent[current]
+
+        path.append(self.root)
+
+        return path
+        
     def T_from_root(self, frame: str) -> np.ndarray:
         """root 기준 frame 의 자세 T(root <- frame).
 
@@ -72,15 +85,23 @@ class CoordinateChain:
             T(base<-camera) = T(base<-link) @ T(link<-camera)
         """
         # TODO: 문제 6-1
-        raise NotImplementedError("T_from_root 를 구현하세요")
-
+        path = self._path_to_root(frame)
+        T = np.eye(4)
+        
+        for child, parent in zip(path[:-1], path[1:]):
+            T = self._T[parent, child] @ T
+        
+        return T
+        
     def T(self, target: str, source: str) -> np.ndarray:
         """source 좌표를 target 좌표로 바꾸는 변환 T(target <- source).
 
         힌트: T(target<-source) = inv(T(root<-target)) @ T(root<-source)
         """
         # TODO: 문제 6-1
-        raise NotImplementedError("T 를 구현하세요")
+        target_T = self.T_from_root(target)
+        source_T = self.T_from_root(source)
+        return np.linalg.inv(target_T) @ source_T
 
     def transform(self, target: str, source: str, P, w: float = 1.0) -> np.ndarray:
         """source 프레임의 점(w=1) 또는 방향(w=0)을 target 프레임으로 변환한다.
@@ -88,12 +109,66 @@ class CoordinateChain:
         (3,) 와 (N,3) 을 모두 지원해야 하고, **반복문을 쓰지 않는다**.
         """
         # TODO: 문제 6-2
-        raise NotImplementedError("transform 을 구현하세요")
+        # 1. source → target 변환행렬 가져오기
+        T = self.T(target, source)
+
+        # 2. P를 NumPy 배열로 만들기
+        P = np.asarray(P)
+
+        # 3. homogeneous coordinate 추가
+        #    [x,y,z] → [x,y,z,w]
+        if P.ndim == 1:
+            P_h = np.append(P, w)
+            # 마지막 w 성분 제거
+            # [x,y,z,w] → [x,y,z]
+            return (T @ P_h)[:3]
+        else:
+            P_h = np.hstack([
+                P, np.full((P.shape[0], 1), w)
+            ])
+            
+            return (T @ P_h)[:, :3]
 
     def axis_angle(self, target: str, source: str):
         """T(target <- source) 의 회전 부분에서 회전축과 회전각을 복원한다."""
         # TODO: 문제 6-4
-        raise NotImplementedError("axis_angle 을 구현하세요")
+        T = self.T(target, source)
+        R = T[:3, :3]
+
+        cos_theta = (np.trace(R) - 1.0) / 2.0
+        cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+        theta = np.arccos(cos_theta)
+
+        # 회전각이 0에 가까운 경우
+        if np.isclose(theta, 0.0):
+            axis = np.array([1.0, 0.0, 0.0])
+
+        # 회전각이 pi에 가까운 경우
+        elif np.isclose(theta, np.pi):
+            axis = np.sqrt((np.diag(R) + 1.0) / 2.0)
+
+            # 부호를 결정
+            if np.isclose(axis[0], 0.0):
+                axis[1] = np.copysign(axis[1], R[0, 1])
+            if np.isclose(axis[1], 0.0):
+                axis[2] = np.copysign(axis[2], R[0, 2])
+            if np.isclose(axis[2], 0.0):
+                axis[2] = np.copysign(axis[2], R[1, 2])
+
+            axis /= np.linalg.norm(axis)
+
+        # 일반적인 경우
+        else:
+            axis = np.array([
+                R[2, 1] - R[1, 2],
+                R[0, 2] - R[2, 0],
+                R[1, 0] - R[0, 1],
+            ]) / (2.0 * np.sin(theta))
+
+            axis /= np.linalg.norm(axis)
+
+        return axis, theta
 
 
 def default_chain() -> CoordinateChain:
@@ -106,10 +181,11 @@ def default_chain() -> CoordinateChain:
     link -> camera : y축 -22.5도, x축 67.5도 회전(y 먼저 곱함: rot_y @ rot_x) 후 (0.12, 0.04, 0.18) m 이동
     """
     # TODO: 문제 6-1
-    #   T_base_link   = make_T(rot_z(...), [...])
-    #   T_link_camera = make_T(rot_y(...) @ rot_x(...), [...])
-    #   return CoordinateChain("base").add(...).add(...)
-    raise NotImplementedError("default_chain 을 구현하세요")
+    T_base_link   = make_T(rot_z(np.deg2rad(30)), [0.35,0.05,0.45])
+    T_link_camera = make_T(rot_y(np.deg2rad(60)) @ rot_x(np.deg2rad(30)), [0.12, 0.04, 0.18])
+    return CoordinateChain("base") \
+        .add("base", "link", T_base_link) \
+        .add("link", "camera", T_link_camera)
 
 
 def camera_point_to_base(p_cam, chain: CoordinateChain | None = None) -> np.ndarray:

@@ -292,13 +292,14 @@ def gauss_eliminate(A, b, pivoting: bool = True, verbose: bool = False):
     피벗이 0 이면 해가 유일하지 않다 -> ZeroDivisionError.
     """
     # TODO: 문제 4-1
-    U = np.array(np.hstack(A, b), dtype=float, copy=True)
+    U = np.array(np.hstack((A, b)), dtype=float, copy=True)
         # m = m.astype(float).copy()
     rows, cols = U.shape
     pivot_row = 0
     n_swaps = 0
     x = np.zeros(rows)
     steps = []
+    steps.append(U.copy())
     
     for col in range(cols):
         column = U[pivot_row:, col]
@@ -319,14 +320,17 @@ def gauss_eliminate(A, b, pivoting: bool = True, verbose: bool = False):
         U[[pivot_row, pivot]] = U[[pivot, pivot_row]]
         n_swaps += 1
         if verbose:
-            print(f"\n행 교환: R{pivot_row} <-> R{pivot}")
-            print(U)
+            if pivot_row != pivot:
+                print(f"\n행 교환: R{pivot_row} <-> R{pivot}")
+                print(U)
         
         for r in range(pivot_row + 1, rows):
             factor = U[r, col] / U[pivot_row, col]
             U[r] = U[r] - factor * U[pivot_row]
-            print(f"소거: R{r} <- R{r} - {factor}R{pivot_row}")
-            print(U)
+            if verbose:
+                print(f"소거: R{r} <- R{r} - {factor}R{pivot_row}")
+                print(U)
+            steps.append(U.copy())
         
         pivot_row += 1
         
