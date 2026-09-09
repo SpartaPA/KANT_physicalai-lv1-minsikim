@@ -127,7 +127,7 @@ class CoordinateChain:
                 P, np.full((P.shape[0], 1), w)
             ])
             
-            return (T @ P_h)[:, :3]
+            return (P_h @ T.T)[:, :3]
 
     def axis_angle(self, target: str, source: str):
         """T(target <- source) 의 회전 부분에서 회전축과 회전각을 복원한다."""
@@ -181,11 +181,13 @@ def default_chain() -> CoordinateChain:
     link -> camera : y축 -22.5도, x축 67.5도 회전(y 먼저 곱함: rot_y @ rot_x) 후 (0.12, 0.04, 0.18) m 이동
     """
     # TODO: 문제 6-1
-    T_base_link   = make_T(rot_z(np.deg2rad(30)), [0.35,0.05,0.45])
-    T_link_camera = make_T(rot_y(np.deg2rad(60)) @ rot_x(np.deg2rad(30)), [0.12, 0.04, 0.18])
+    T_base_link   = make_T(rot_z(np.deg2rad(30)), [0.3,0.0,0.4])
+    T_link_camera = make_T(rot_y(np.deg2rad(-20)) @ rot_x(np.deg2rad(90)), [0.1, 0.05, 0.15])
+    T_camera_object = make_T(rot_y(np.deg2rad(25)) @ rot_x(np.deg2rad(90)), [0.05, -0.02, 0.6])
     return CoordinateChain("base") \
         .add("base", "link", T_base_link) \
-        .add("link", "camera", T_link_camera)
+        .add("link", "camera", T_link_camera) \
+        .add("camera", "object", T_camera_object)
 
 
 def camera_point_to_base(p_cam, chain: CoordinateChain | None = None) -> np.ndarray:

@@ -127,7 +127,7 @@ class CoordinateChain:
                 P, np.full((P.shape[0], 1), w)
             ])
             
-            return (T @ P_h)[:, :3]
+            return (P_h @ T.T)[:, :3]
 
     def axis_angle(self, target: str, source: str):
         """T(target <- source) 의 회전 부분에서 회전축과 회전각을 복원한다."""

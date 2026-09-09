@@ -129,9 +129,29 @@ def transform_points(T, P, w: float = 1.0) -> np.ndarray:
     """
     # TODO: 문제 5-2 / 6-2
     # 동차좌표 추가 → (N,4)
-    P_h = np.hstack((P, np.full((P.shape[0], 1), w)))
+    T = np.asarray(T, dtype=float)
+    P = np.asarray(P, dtype=float)
 
-    return (T @ P_h.T).T[:,:3]
+    if P.ndim == 1:
+        # 점 하나: (3,) → (4,)
+        P_h = np.concatenate([
+            P,
+            np.array([w])
+        ])
+
+        return (T @ P_h)[:3]
+
+    elif P.ndim == 2:
+        # 점군: (N,3) → (N,4)
+        P_h = np.hstack([
+            P,
+            np.full((P.shape[0], 1), w)
+        ])
+
+        return (P_h @ T.T)[:, :3]
+
+    else:
+        raise ValueError("P는 (3,) 또는 (N,3)이어야 합니다.")
 
 
 def least_squares_normal_equation(A, b):
