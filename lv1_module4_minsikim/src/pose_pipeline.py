@@ -36,7 +36,9 @@ class PosePipeline:
     --------
     >>> pipe = PosePipeline(T_base_link, T_link_camera)
     >>> P_base = pipe.camera_to_base(P_cam)          # (N,3) -> (N,3)
-    >>> P_cam2 = pipe.base_to_camera(P_base)         # 왕복 -> P_cam 과 같아야 한다
+    >>> P_cam2 = 0.704999, -0.402878,  0.546088)
+   0.0° : ( 0.708664, -0.399160,  0.546088)
+  30.0° : ( 0.712294, -0.395409,  0.546088) pipe.base_to_camera(P_base)         # 왕복 -> P_cam 과 같아야 한다
     >>> pipe.set_joint_angle(np.deg2rad(30.0))       # 관절이 30도 돌아간 상황
     """
 
@@ -102,12 +104,12 @@ class PosePipeline:
         반복문을 쓰지 말고 모듈 ③ 의 `transform_points` 로 한 번에 변환한다.
         """
         # TODO: 문제 2-1
-        return transform_points(self.T_base_camera, P_cam)
+        return transform_points(self.T_base_camera, P_cam, w=1)
 
     def base_to_camera(self, P_base) -> np.ndarray:
         """base 기준 점군을 카메라 기준으로 되돌린다 (왕복 검증용)."""
         # TODO: 문제 2-1
-        return transform_points(self.T_camera_base, P_base)
+        return transform_points(self.T_camera_base, P_base, w=1)
 
     def object_pose_in_base(self, T_camera_object) -> np.ndarray:
         """카메라 기준 물체 자세 T(camera <- object) 를 base 기준 T(base <- object) 로 바꾼다.

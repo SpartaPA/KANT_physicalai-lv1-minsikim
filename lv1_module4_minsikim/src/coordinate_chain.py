@@ -178,16 +178,17 @@ def default_chain() -> CoordinateChain:
     아래 값을 **그대로** 쓴다. (노트북 6-1 의 검증 셀이 이 값을 확인한다)
 
     base -> link   : z축 22.5도 회전 후 (0.35, 0.05, 0.45) m 이동
-    link -> camera : y축 -22.5도, x축 67.5도 회전(y 먼저 곱함: rot_y @ rot_x) 후 (0.12, 0.04, 0.18) m 이동
+    link -> camera : `T_link_cam` = T(link ← camera) | y축 -20도 후 x축 90도 (`rot_y @ rot_x`) | (0.10, 0.05, 0.15) |
+    T_cam_obj = T(camera ← object) | z축 25도 후 x축 -90도 (`rot_z @ rot_x`) | (0.05, -0.02, 0.60) — 카메라 앞 60 cm |
     """
     # TODO: 문제 6-1
     T_base_link   = make_T(rot_z(np.deg2rad(30)), [0.3,0.0,0.4])
     T_link_camera = make_T(rot_y(np.deg2rad(-20)) @ rot_x(np.deg2rad(90)), [0.1, 0.05, 0.15])
-    T_camera_object = make_T(rot_y(np.deg2rad(25)) @ rot_x(np.deg2rad(90)), [0.05, -0.02, 0.6])
+    
     return CoordinateChain("base") \
         .add("base", "link", T_base_link) \
         .add("link", "camera", T_link_camera) \
-        .add("camera", "object", T_camera_object)
+        # .add("camera", "object", T_camera_object)
 
 
 def camera_point_to_base(p_cam, chain: CoordinateChain | None = None) -> np.ndarray:
