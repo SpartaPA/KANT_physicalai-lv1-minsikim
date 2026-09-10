@@ -16,6 +16,8 @@ class RotateClient(Node):
             RotateAbsolute,
             '/turtle1/rotate_absolute'
         )
+        
+        self.goal_handle = None
 
     def send_goal(self, theta):
         self.get_logger().info(
@@ -46,9 +48,10 @@ class RotateClient(Node):
             rclpy.shutdown()
             return
 
+        self.goal_handle = goal_handle
+
         self.get_logger().info('Goal이 승인되었습니다.')
 
-        # 결과 요청
         result_future = goal_handle.get_result_async()
         result_future.add_done_callback(self.result_callback)
 
@@ -67,6 +70,28 @@ class RotateClient(Node):
         )
 
         rclpy.shutdown()
+        
+    def cancel_goal(self):
+        if self.goal_handle is None:
+            self.get_logger().info('취소할 Goal이 없습니다.')
+            return
+
+        self.get_logger().info('Goal 취소 요청')
+
+        future = self.goal_handle.cancel_goal_async()
+        future.add_done_callback(self.cancel_callback)
+
+        # 타이머 제거
+        self.cancel_timer.cancel()
+
+
+    def cancel_callback(self, future):
+        cancel_response = future.result()
+
+        if len(cancel_response.goals_canceling) > 0:
+            self.get_logger().info('Goal 취소 성공')
+        else:
+            self.get_logger().info('Goal 취소 실패')
 
 
 def main(args=None):
@@ -76,6 +101,11 @@ def main(args=None):
 
     # 예: 90도 = pi/2
     node.send_goal(math.pi/2)
+    
+    node.cancel_timer = node.create_timer(
+        .5,
+        node.cancel_goal
+    )
 
     try:
         rclpy.spin(node)
