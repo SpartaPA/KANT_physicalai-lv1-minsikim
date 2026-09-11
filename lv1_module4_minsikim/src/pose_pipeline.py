@@ -59,6 +59,7 @@ class PosePipeline:
 
         self.joint_axis = joint_axis
         self.joint_angle = 0.0
+        
 
     # ------------------------------------------------------------- 변환 행렬
 
@@ -70,7 +71,7 @@ class PosePipeline:
             T_base_link = T_base_link0 @ make_T(R_axis(joint_angle), [0, 0, 0])
         """
         # TODO: 문제 2-2
-        return self._T_base_link0 @ make_T(_ROT[self.joint_axis](np.deg2rad(self.joint_angle)), [0,0,0])
+        return self._T_base_link0 @ make_T(_ROT[self.joint_axis](self.joint_angle), [0,0,0])
 
     @property
     def T_link_camera(self) -> np.ndarray:
