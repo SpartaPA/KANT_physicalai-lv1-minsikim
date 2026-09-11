@@ -143,8 +143,61 @@ def axis_angle_from_matrix(R, atol: float = 1e-8):
     angle : 회전각 [rad], 0 <= angle <= pi
     """
     # TODO: 문제 6-4
-    raise NotImplementedError("axis_angle_from_matrix 를 구현하세요")
+    R = np.asarray(R, dtype=float)
+    # 1. 회전각 theta 복원
+    cos_theta = (np.trace(R) - 1.0) / 2.0
+    # 수치 오차 때문에 [-1, 1]을 조금 벗어날 수 있으므로 제한
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    theta = np.arccos(cos_theta)
+    
+    if np.isclose(theta, 0.0, atol=atol):
+        # 회전이 없으므로 축은 실제로 의미가 없음.
+        # 규약으로 +x축을 사용한다.
+        return np.array([1.0, 0.0, 0.0]), 0.0
+    
+    if np.isclose(theta, np.pi, atol=atol):
+        # pi에서는 sin(theta) = 0이라
+        # R - R.T 로 축의 부호를 결정할 수 없다.
+        #
+        # 따라서 고유값 1에 대응하는 고유벡터를 사용하고
+        # 첫 번째 성분이 음수가 되지 않도록 규약을 정한다.
+        eigenvalues, eigenvectors = np.linalg.eig(R)
 
+        idx = np.argmin(np.abs(eigenvalues - 1.0))
+        axis = np.real(eigenvectors[:, idx])
+        axis = axis / np.linalg.norm(axis)
+
+        # 축의 부호는 임의이므로 첫 번째 유의미한 성분을 양수로
+        for value in axis:
+            if abs(value) > atol:
+                if value < 0:
+                    axis = -axis
+                break
+
+        return axis, np.pi
+    
+    # 일반적인 경우
+    eigenvalues, eigenvectors = np.linalg.eig(R)
+
+    idx = np.argmin(np.abs(eigenvalues - 1.0))
+
+    axis = np.real(eigenvectors[:, idx])
+    axis = axis / np.linalg.norm(axis)
+    
+    skew = R - R.T
+    
+    sign_axis = np.array([
+        skew[2, 1],
+        skew[0, 2],
+        skew[1, 0]
+    ])
+
+    # 고유벡터와 반대 방향이면 뒤집는다.
+    if np.dot(axis, sign_axis) < 0:
+        axis = -axis
+
+    return axis, theta
+    
 
 def quaternion_from_axis_angle(axis, angle: float) -> np.ndarray:
     """축-각에서 단위 쿼터니언을 만든다.
@@ -155,4 +208,13 @@ def quaternion_from_axis_angle(axis, angle: float) -> np.ndarray:
     (그래야 문제 6-5 에서 바로 비교할 수 있다).
     """
     # TODO: 문제 6-5
-    raise NotImplementedError("quaternion_from_axis_angle 을 구현하세요")
+    axis = axis / np.linalg.norm(axis)
+    
+    s = np.sin(angle/2)
+    w = np.cos(angle/2)
+    x = axis[0] * s
+    y = axis[1] * s
+    z = axis[2] * s
+    
+    return np.array([x,y,z,w])
+
